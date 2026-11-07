@@ -1,0 +1,67 @@
+llm:
+  gemini_model: gemini-2.5-flash        # main
+  groq_model: openai/gpt-oss-120b      # backup (falls back to gpt-oss-20b / qwen on rate limits)
+
+youtube:
+  privacy: private      # switch to "public" after you review the first videos AND the API audit is approved
+  category_id: "27"     # Education
+  shorts_hour_utc: 17   # Shorts series: Part 1 today, Part 2 tomorrow ... each at 17:00 UTC (12:00 ET)
+
+instagram:
+  graph_version: v21.0
+
+video:
+  seg_seconds: 5        # new shot every ~5s (keeps retention up)
+  fps: 30
+  ai_images_long: 50    # max NEW AI images per long video (others hold the previous shot)
+  ai_images_short: 8    # max NEW AI images per Short
+  final_preset: fast    # x264 preset for final encode (medium = better, slower)
+  sound_effects: false  # gavel/cash/etc. Off: they sounded artificial. Turn on only with real recordings in assets/sfx
+  bed_level: 0.05       # quiet background ambience under the voice (0 = off)
+
+images:
+  image_providers: [klein, schnell]   # klein = FLUX.2 photoreal; schnell = older fallback (pollinations is no longer free)
+  size_long: [1344, 768]
+  size_short: [1024, 1280]  # 4:5, trimmed to 9:16 (tall sizes make FLUX repeat the scene)
+  flux_steps: 8         # used by schnell fallback
+  image_qc: true        # Gemini checks each image (realism, garbled text, hands, matches the sentence)
+  qc_min_score: 7       # below this the image is re-generated
+  qc_retries: 2         # max re-rolls per shot (best attempt is kept)
+  qc_extra_images: 10   # extra generations allowed per video for re-rolls (protects the free quota)
+
+channels:
+  cash_and_court:
+    name: Cash & Court
+    voice: en-US-AndrewMultilingualNeural   # natural, conversational
+    rate: "+2%"
+    mood: dark            # background sound bed
+    long_days: [Mon, Thu]   # documentary days (UTC). Each documentary -> 15-20 min video + 5-part Shorts series
+    long: {minutes: "15-20", words: 2600, chapters: 12, short_parts: 5}
+    audience: US adults 25-55 who love true stories about money, fraud and justice
+    pillars:
+      - Scams Exposed (famous scams, Ponzi schemes, fraud rings, how victims got caught)
+      - Insurance Horror Stories (denied claims, bad-faith insurance cases, landmark rulings)
+      - Lawsuits Explained (famous US lawsuits, surprising verdicts, what really happened)
+    tone: suspenseful true-crime storytelling, calm narrator, cliffhangers between sections
+    visual_style: serious true-crime documentary photo, slightly cool tones, overcast or indoor office light
+    accent: [255, 196, 0]
+    fallback_visuals: [money cash, courtroom, city night, office documents, police lights]
+    secrets: {yt_token: YT_TOKEN_CASH_AND_COURT, ig_user: IG_USER_CASH_AND_COURT, ig_token: IG_TOKEN_CASH_AND_COURT}
+
+  rich_loophole:
+    name: The Rich Loophole
+    voice: en-US-BrianMultilingualNeural
+    rate: "+4%"
+    mood: luxury
+    long_days: [Tue, Fri]
+    long: {minutes: "15-20", words: 2600, chapters: 12, short_parts: 5}
+    audience: ambitious US adults 22-45 who want to understand how wealthy and savvy people play the system
+    pillars:
+      - Rich People Secrets (legal tax strategies of billionaires, how fortunes are built and protected)
+      - Credit Card & Points Hacks (how travel hackers fly free, card perks most people miss)
+      - AI Money Tools (free AI tools that replace expensive services, automation side hustles)
+    tone: energetic, insider, "nobody tells you this", explanatory not advisory
+    visual_style: real-world business and lifestyle photo, warm natural daylight, modern but believable settings
+    accent: [0, 220, 140]
+    fallback_visuals: [luxury lifestyle, private jet, credit card, skyscraper, laptop technology]
+    secrets: {yt_token: YT_TOKEN_RICH_LOOPHOLE, ig_user: IG_USER_RICH_LOOPHOLE, ig_token: IG_TOKEN_RICH_LOOPHOLE}

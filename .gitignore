@@ -1,0 +1,7 @@
+.env
+client_secret.json
+.venv/
+output/
+cache/
+__pycache__/
+check_image.jpg
