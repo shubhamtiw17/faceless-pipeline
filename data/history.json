@@ -1,1 +1,18 @@
-{}
+{
+ "rich_loophole": [
+  {
+   "date": "2026-11-08",
+   "title": "How the Panama Papers Exposed Billionaire Tax Loopholes",
+   "pillar": "Rich People Secrets",
+   "source_title": "Panama Papers",
+   "factcheck": {
+    "short": {
+     "verdict": "ok",
+     "fixes": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_short": "mmFQ6OUiWmY"
+  }
+ ]
+}
