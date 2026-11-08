@@ -9,11 +9,13 @@ youtube:
 
 instagram:
   graph_version: v21.0
+  posts_per_day: 3      # Reels per account per day (today's Short part first, then chapter clips)
+  clips_per_doc: 6      # extra 45-60 s chapter clips per documentary (Instagram only, no new images)
 
 video:
   seg_seconds: 5        # new shot every ~5s (keeps retention up)
   fps: 30
-  ai_images_long: 50    # max NEW AI images per long video (others hold the previous shot)
+  ai_images_long: 40    # max NEW AI images per long video (others hold the previous shot)
   ai_images_short: 8    # max NEW AI images per Short
   final_preset: fast    # x264 preset for final encode (medium = better, slower)
   sound_effects: false  # gavel/cash/etc. Off: they sounded artificial. Turn on only with real recordings in assets/sfx
@@ -23,11 +25,12 @@ images:
   image_providers: [klein, schnell]   # klein = FLUX.2 photoreal; schnell = older fallback (pollinations is no longer free)
   size_long: [1344, 768]
   size_short: [1024, 1280]  # 4:5, trimmed to 9:16 (tall sizes make FLUX repeat the scene)
-  flux_steps: 8         # used by schnell fallback
+  flux_steps: 6         # schnell quality (4-8); ~80 units per image
+  klein_per_video: 8    # FLUX.2 Klein (realistic, ~500 units each) for the first/most important shots only
   image_qc: true        # Gemini checks each image (realism, garbled text, hands, matches the sentence)
   qc_min_score: 7       # below this the image is re-generated
   qc_retries: 2         # max re-rolls per shot (best attempt is kept)
-  qc_extra_images: 10   # extra generations allowed per video for re-rolls (protects the free quota)
+  qc_extra_images: 8    # extra generations allowed per video for re-rolls (protects the free quota)
 
 channels:
   cash_and_court:
@@ -36,7 +39,7 @@ channels:
     rate: "+2%"
     mood: dark            # background sound bed
     long_days: [Mon, Thu]   # documentary days (UTC). Each documentary -> 15-20 min video + 5-part Shorts series
-    long: {minutes: "15-20", words: 2600, chapters: 12, short_parts: 5}
+    long: {minutes: "15-20", words: 2900, chapters: 13}   # Shorts parts = days until the next documentary
     audience: US adults 25-55 who love true stories about money, fraud and justice
     pillars:
       - Scams Exposed (famous scams, Ponzi schemes, fraud rings, how victims got caught)
@@ -54,7 +57,7 @@ channels:
     rate: "+4%"
     mood: luxury
     long_days: [Tue, Fri]
-    long: {minutes: "15-20", words: 2600, chapters: 12, short_parts: 5}
+    long: {minutes: "15-20", words: 2900, chapters: 13}   # Shorts parts = days until the next documentary
     audience: ambitious US adults 22-45 who want to understand how wealthy and savvy people play the system
     pillars:
       - Rich People Secrets (legal tax strategies of billionaires, how fortunes are built and protected)

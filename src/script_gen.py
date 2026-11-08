@@ -18,7 +18,15 @@ BEAT_RULES = """BEAT RULES (most important part):
 - "emotion" (controls the narrator's voice): one of [{emotions}]. Vary it like a real storyteller:
   calm setup -> tense build-up -> dramatic reveal -> question to the viewer. Never 3 identical in a row.
 - "sfx": one of [{sfx}]. Usually "none"; only for a real sound in the scene (gavel on a verdict).
-- "shot" is ONE of:
+- "shot" is ONE of (prefer REAL photos, they look far more credible than AI):
+  {{"type":"photo","ref":"P3"}}  a REAL photo from the list of available photos below (use it when it shows
+      the place, object, product or event the beat talks about; each one at most twice).
+  {{"type":"photo","query":"2-5 word search"}}  a REAL photo found by search: concrete places and things
+      ("New York courthouse", "stack of 100 dollar bills", "1980s electronics store", "stock exchange floor").
+      Never search for a person's name.
+  {{"type":"stock","query":"2-4 word search"}}  a REAL VIDEO clip (moving footage) for general moments:
+      "counting cash", "police car lights night", "busy office", "city traffic", "typing keyboard",
+      "courtroom", "stock market screen". Use it for about 30% of beats, it makes the video feel alive.
   {{"type":"ai","prompt":"..."}}  new AI image. Prompt = a REAL-LOOKING news / documentary photo, like Reuters or AP:
       ordinary people, real places, everyday objects, natural light. Subject + action + setting + era + camera distance
       (wide / medium / close-up). Avoid fantasy, glowing, epic or "cinematic" words; keep it plain and believable.
@@ -61,6 +69,9 @@ Say "alleged" where the SOURCE says nothing was proven. Tell the story; never gi
 legal or medical advice.
 
 {beat_rules}
+
+Available real photos (use with {{"type":"photo","ref":"P#"}}):
+{photos}
 
 Return ONLY JSON:
 {{
@@ -110,7 +121,7 @@ Return ONLY JSON:
  "scenes": [{{"beats": [{{"text": "...", "emotion": "neutral", "sfx": "none", "shot": {{"type": "ai", "prompt": "..."}}}}]}}]
 }}"""
 
-SHOT_TYPES = {"ai", "stat", "hold", "stock"}
+SHOT_TYPES = {"ai", "stat", "hold", "stock", "photo"}
 
 
 def _norm_beat(b):
@@ -130,6 +141,8 @@ def _norm_beat(b):
     if shot["type"] == "ai" and not shot.get("prompt"):
         shot = {"type": "hold"}
     if shot["type"] == "stat" and not shot.get("value"):
+        shot = {"type": "hold"}
+    if shot["type"] == "photo" and not (shot.get("ref") or shot.get("query")):
         shot = {"type": "hold"}
     return {"text": text, "emotion": str(b.get("emotion") or "neutral").lower(),
             "sfx": str(b.get("sfx") or "none").lower(), "shot": shot}
@@ -207,6 +220,10 @@ def _make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24, avoid=())
     if not art:
         raise RuntimeError("no candidate story had a usable Wikipedia article")
     print(f"[source] {art['title']} ({len(art['text'])} chars) {art['url']}")
+    from .realphotos import RealPhotos
+    pool = RealPhotos().article_photos(art["title"])
+    photos_txt = "\n".join(f"P{i + 1}: {p['desc']}" for i, p in enumerate(pool)) or "(none - use photo queries)"
+    print(f"[photo] {len(pool)} free photos in the article")
     src = art["text"][:10000]   # ~2.5k tokens: enough facts, stays inside free rate limits
 
     # 1) story + Short (always)
@@ -214,7 +231,7 @@ def _make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24, avoid=())
         name=ch["name"], audience=ch["audience"], tone=ch["tone"], pillar=pillar, pillars=pillars,
         history="\n".join(f"- {t}" for t in titles) or "- (none yet)",
         topic=cand.get("topic") or art["title"], src_title=art["title"], src_url=art["url"], source=src,
-        beat_rules=rules, long_block="", long_rules="")
+        beat_rules=rules, long_block="", long_rules="", photos=photos_txt)
 
     def check_short(d):
         sh = _find_short(d)
@@ -224,9 +241,14 @@ def _make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24, avoid=())
         sh["beats"] = _norm_beats(sh.get("beats"))
         n = len(sh["beats"])
         return (n if n >= 3 else 0), (None if n >= 6 else f"only {n} usable short beats")
-    data = _ask(prompt, llm_cfg, check_short, "short script")
+    if long_form:   # documentary day: the Shorts series replaces the standalone Short (saves a call)
+        data = {"title": cand.get("topic") or art["title"], "description": cand.get("topic") or art["title"],
+                "short": {"beats": []}, "cast": {}}
+    else:
+        data = _ask(prompt, llm_cfg, check_short, "short script")
     data.setdefault("title", data["short"].get("title", "Untitled"))
     data["source_title"], data["source_text"], data["source_url"] = art["title"], src, art["url"]
+    data["photo_pool"], data["_photos_txt"] = pool, photos_txt
     data["references"] = sources.references(art["title"])
     data["sources"] = [f"Wikipedia: {art['title']} - {art['url']}"] + data["references"]
     data.setdefault("description", data["short"].get("caption", ""))
@@ -272,7 +294,12 @@ Recurring people (use these looks word for word in prompts): {cast}
 
 {beat_rules}
 
-Now write ONLY chapters {first} to {last} in full. Each chapter: about {words} words of narration in 6-12 beats,
+Available real photos (use with {{"type":"photo","ref":"P#"}}):
+{photos}
+Mix: ~35% "photo", ~30% "stock" video, ~15% "ai" (only moments nothing real can show), rest "hold"/"stat".
+
+Now write ONLY chapters {first} to {last} in full. Each chapter MUST have AT LEAST {words} words of narration
+(count them; this is a {minutes}-minute documentary, so go deep: context, people, numbers, turning points) in 10-16 beats,
 at most {ai_per} "ai" shots per chapter, 0-1 "stat" shot, "hold" for the rest (never more than 3 holds in a row).
 Connect to the previous chapter naturally; end each chapter with a small cliffhanger.{ending}
 Return ONLY JSON: {{"chapters": [{{"title": "...", "beats": [{{"text": "...", "emotion": "...", "sfx": "none", "shot": {{"type": "ai", "prompt": "..."}}}}]}}]}}"""
@@ -334,11 +361,17 @@ def _make_long(ch, data, art, src, rules, llm_cfg, max_ai):
             got = _norm_scenes(d.get("chapters") or d.get("scenes"))
             d["_scenes"] = got
             nb = sum(len(sc["beats"]) for sc in got)
-            return nb, (None if len(got) >= want and nb >= 5 * want else f"{len(got)} chapters / {nb} beats")
+            nw = sum(len(b["text"].split()) for sc in got for b in sc["beats"])
+            if len(got) < want or nb < 5 * want:
+                return nb, f"{len(got)} chapters / {nb} beats"
+            if nw < 0.8 * per_ch * want:   # LLMs under-write: ask again until the length is right
+                return nw, f"too short: {nw} words, need ~{per_ch * want}"
+            return nw, None
         res = _ask(CHAPTER_PROMPT.format(name=ch["name"], audience=ch["audience"], tone=ch["tone"],
                                          title=data["title"], plan=plan, src_title=art["title"], source=src,
                                          cast=data.get("cast") or "none", beat_rules=rules, first=first,
-                                         last=last, words=per_ch, ai_per=ai_per, ending=ending),
+                                         last=last, words=per_ch, ai_per=ai_per, ending=ending, minutes=minutes,
+                                         photos=data.get("_photos_txt", "(none)")),
                    llm_cfg, check_batch, f"chapters {first}-{last}")
         raw = (res.get("chapters") or res.get("scenes") or [])
         for j, sc in enumerate(res["_scenes"]):

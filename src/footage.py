@@ -1,4 +1,4 @@
-"""Free stock video/photos: Pexels (required) + Pixabay (optional, adds variety)."""
+"""Free real stock video: Pixabay and/or Pexels (whichever keys exist)."""
 import hashlib, os, random
 from pathlib import Path
 import requests
@@ -12,6 +12,7 @@ class Stock:
         self.cache = Path(cache_dir); self.cache.mkdir(parents=True, exist_ok=True)
         self.fallbacks = fallbacks
         self.used = set()
+        self.sources_used = set()
 
     # ---- search -------------------------------------------------------
     def _pexels_links(self, q, vertical):
@@ -34,13 +35,16 @@ class Stock:
         r = requests.get("https://pixabay.com/api/videos/", timeout=60,
                          params={"key": self.pixabay, "q": q, "per_page": 30, "safesearch": "true"})
         out = []
-        for h in (r.json().get("hits", []) if r.ok else []):
+        hits = r.json().get("hits", []) if r.ok else []
+        for h in hits:
+            if h.get("duration", 0) < 4:
+                continue
             for size in ("large", "medium"):
                 f = h.get("videos", {}).get(size) or {}
-                if f.get("url") and min(f.get("width", 0), f.get("height", 0)) >= 1080 \
-                        and (f["height"] > f["width"]) == vertical:
-                    out.append((f"pb{h['id']}", f["url"])); break
-        return out
+                if f.get("url") and min(f.get("width", 0), f.get("height", 0)) >= 720:
+                    # vertical videos first for Shorts; landscape ones are centre-cropped
+                    out.append(((f["height"] > f["width"]) != vertical, f"pb{h['id']}", f["url"])); break
+        return [(i, u) for _, i, u in sorted(out, key=lambda x: x[0])]
 
     def _download(self, url, ext):
         p = self.cache / (hashlib.md5(url.encode()).hexdigest() + ext)
@@ -59,7 +63,9 @@ class Stock:
             fresh = [l for l in links if l[0] not in self.used]
             for vid, url in fresh[:6]:
                 try:
-                    p = self._download(url, ".mp4"); self.used.add(vid); return p
+                    p = self._download(url, ".mp4"); self.used.add(vid)
+                    self.sources_used.add("Pixabay" if vid.startswith("pb") else "Pexels")
+                    return p
                 except Exception:  # noqa: BLE001
                     continue
         raise RuntimeError(f"no stock clip for '{query}'")

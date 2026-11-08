@@ -71,6 +71,13 @@ def prep_still(src, W, H, out, vertical=False, title=None, accent=(255, 214, 0))
     A square image on a Short is framed on a blurred copy of itself instead of being upscaled."""
     im = Image.open(src).convert("RGB")
     img_vertical = im.height > im.width
+    if not vertical and im.height > im.width * 1.05:   # portrait photo in a 16:9 video: frame it, don't crop
+        bg = ImageEnhance.Brightness(_cover(im, W, H).filter(ImageFilter.GaussianBlur(40))).enhance(0.45)
+        s_ = min(H / im.height, W * 0.6 / im.width)
+        fg = im.resize((int(im.width * s_), int(im.height * s_)), Image.LANCZOS)
+        bg.paste(fg, ((W - fg.width) // 2, (H - fg.height) // 2))
+        bg.save(out, quality=95)
+        return out
     if not vertical or img_vertical:
         img = _cover(im, W, H).filter(ImageFilter.UnsharpMask(radius=1.5, percent=50, threshold=2))
         if vertical:  # darken the top a little so the hook title stays readable
@@ -206,7 +213,7 @@ def _is_wide(path):
 
 
 def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, title=None, cast=None, effects=False,
-                info=None, image_pool=None):
+                info=None, image_pool=None, photos=None, photo_pool=None):
     """info (dict, filled in): chapters [(title, start_s)], scene_images {chapter: [paths]}, length.
     image_pool: pictures for {"type": "image"} shots (Shorts cut from the long video)."""
     wd = Path(workdir); wd.mkdir(parents=True, exist_ok=True)
@@ -215,6 +222,7 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
     accent = tuple(ch.get("accent", [255, 214, 0]))
     imggen.budget = vcfg["ai_images_short" if vertical else "ai_images_long"]
     imggen.count = imggen.calls = 0
+    imggen.klein_used = 0
     sound = SoundDesign()
     cast_txt = {k.lower(): v for k, v in (cast or {}).items()}
 
@@ -233,6 +241,9 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
     overlay = title_overlay(W, H, title, accent, wd / "overlay.png") if vertical else None
 
     def show(img_path, frames, seg, motion, strength, i):
+        if str(img_path).endswith(".mp4"):     # reused real video clip
+            stock_seg(img_path, frames, W, H, fps, seg)
+            return
         if vertical and _is_wide(img_path):
             pan_seg(img_path, frames, W, H, fps, i, seg, overlay)
         else:
@@ -274,15 +285,39 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
                 last_img = src
                 info["scene_images"].setdefault(b.get("scene", 0), []).append(str(src))
                 show(src, frames, seg, motion, strength, i)
+            elif kind == "photo" and photos is not None:
+                ref, item = str(shot.get("ref") or ""), None
+                if ref[1:].isdigit() and 0 < int(ref[1:]) <= len(photo_pool or []):
+                    item = photo_pool[int(ref[1:]) - 1]
+                try:
+                    src = photos.fetch(item) if item else photos.find(shot.get("query") or b["text"][:60], vertical)
+                except Exception:  # noqa: BLE001  no real photo -> AI picture of the same thing
+                    src = imggen.generate(with_cast(f"{shot.get('query') or b['text']}, documentary photo"), vertical)
+                last_img = src
+                info["scene_images"].setdefault(b.get("scene", 0), []).append(str(src))
+                show(src, frames, seg, motion, strength, i)
             elif kind == "image" and pool:
                 last_img = pool[pi % len(pool)]; pi += 1
                 show(last_img, frames, seg, motion, strength, i)
             elif kind == "stat":
                 card = stat_card(str(shot.get("value", "")), str(shot.get("label", "")), W, H, accent,
-                                 wd / f"c{i:03}.jpg", bg=last_img, title=title)
+                                 wd / f"c{i:03}.jpg", bg=last_img if last_img and not str(last_img).endswith(".mp4")
+                                 else None, title=title)
                 ken_burns(card, frames, W, H, fps, "zoom_in", seg, 0.06)
             elif kind == "stock":
-                stock_seg(stock.clip(shot.get("query", "city night"), vertical), frames, W, H, fps, seg)
+                try:
+                    clip = stock.clip(shot.get("query", "city night"), vertical)
+                    stock_seg(clip, frames, W, H, fps, seg)
+                    info["scene_images"].setdefault(b.get("scene", 0), []).append(str(clip))
+                except Exception:  # noqa: BLE001  no clip -> real photo -> AI
+                    try:
+                        src = photos.find(shot.get("query") or b["text"][:60], vertical) if photos else None
+                    except Exception:  # noqa: BLE001
+                        src = None
+                    src = src or imggen.generate(with_cast(f"{shot.get('query')}, documentary photo"), vertical)
+                    last_img = src
+                    info["scene_images"].setdefault(b.get("scene", 0), []).append(str(src))
+                    show(src, frames, seg, motion, strength, i)
             else:
                 raise LookupError("hold")
         except Exception as e:  # noqa: BLE001  hold / fallback: keep the story's last image moving
@@ -304,7 +339,7 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
         frame_pos += frames
         t += seg_len
     info["length"] = t
-    print(f"[video] beats: {len(beats)} | AI images: {imggen.count} (generations incl. QC re-rolls: {imggen.calls}) | length {t:.1f}s")
+    print(f"[video] beats: {len(beats)} | AI images: {imggen.count} (generations incl. QC re-rolls: {imggen.calls}, premium: {imggen.klein_used}, ~{imggen.neurons} of 10,000 free units) | length {t:.1f}s")
 
     (wd / "vlist.txt").write_text("".join(f"file '{s.name}'\n" for s in segs))
     (wd / "alist.txt").write_text("".join(f"file '{a.name}'\n" for a in wavs))

@@ -74,6 +74,9 @@ class ImageGen:
         self.count = 0    # distinct shots made
         self.calls = 0    # API generations incl. QC re-rolls
         self.dead = set()  # providers that failed hard this run (quota/auth) are skipped afterwards
+        self.klein_max = cfg.get("klein_per_video", 8)   # premium shots per video (~500 units each)
+        self.klein_used = 0
+        self.neurons = 0                                 # rough spend estimate for the log
         self.qc = cfg.get("image_qc", True)
         self.qc_min = cfg.get("qc_min_score", 7)
         self.qc_retries = cfg.get("qc_retries", 2)
@@ -89,7 +92,8 @@ class ImageGen:
             return out
         best, tries = None, 1 + (self.qc_retries if self.qc else 0)
         for attempt in range(tries):
-            if attempt and self.calls - self.count >= self.qc_extra:
+            if attempt and (self.calls - self.count >= self.qc_extra or
+                            (used == "klein" and attempt >= 2)):
                 break  # re-roll allowance for this video used up: keep the best so far
             variant = full if attempt == 0 else f"{full}, {random.choice(['wider shot', 'closer shot', 'side angle', 'eye-level shot'])}"
             try:
@@ -109,20 +113,48 @@ class ImageGen:
         out.write_bytes(best[1]); self.count += 1
         return out
 
+    def _klein_sized(self, full, w, h):
+        """Tries the configured size, then smaller standard sizes if Cloudflare refuses it (size rules vary)."""
+        sizes = [(w, h)] + ([(1280, 720), (1024, 576)] if w > h else [(720, 1280), (768, 1024)] if h > w else [(1024, 1024)])
+        if getattr(self, "_ok_size", {}).get((w, h)):
+            sizes = [self._ok_size[(w, h)]]
+        last = None
+        for sw, sh in sizes:
+            try:
+                data = _klein(full, sw, sh, self.steps)
+                self._ok_size = {**getattr(self, "_ok_size", {}), (w, h): (sw, sh)}
+                if (sw, sh) != (w, h):
+                    print(f"[img] klein: {w}x{h} refused, using {sw}x{sh}")
+                return data
+            except Exception as e:  # noqa: BLE001
+                last = e
+                if not any(c in str(e) for c in ("400", "width", "height", "size", "dimension")):
+                    raise
+        raise last
+
     def _raw(self, full, w, h):
         errs = []
-        for p in self.providers:
+        order = list(self.providers)
+        if self.klein_used >= self.klein_max and "klein" in order:   # premium budget spent: cheaper model
+            order = [p for p in order if p != "klein"] + ["klein"]
+        for p in order:
             if p in self.dead:
                 continue
             for attempt in range(2):
                 try:
-                    data = (_klein(full, w, h, self.steps) if p == "klein" else
+                    data = (self._klein_sized(full, w, h) if p == "klein" else
                             _schnell(full, self.steps) if p in ("schnell", "cloudflare") else
                             _pollinations(full, w, h))
                     self.calls += 1
+                    if p == "klein":
+                        self.klein_used += 1; self.neurons += 520
+                    else:
+                        self.neurons += 80
                     return data, p
                 except Exception as e:  # noqa: BLE001
                     errs.append(f"{p}: {e}")
+                    if attempt == 0 and not errs[:-1]:
+                        print(f"[img] {p} error: {str(e)[:200]}")
                     if any(c in str(e) for c in ("401", "402", "403", "429", "4006", "quota")):
                         if p in ("klein", "schnell") and any(c in str(e) for c in ("429", "4006", "quota")):
                             print("[img] Cloudflare free daily limit reached (resets 00:00 UTC / 05:30 IST)")
