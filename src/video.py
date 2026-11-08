@@ -1,7 +1,7 @@
 """Builds the final video beat by beat:
 every beat (1-2 sentences) gets its own voice delivery, its own shot that shows what is being said,
 and its own sound effect; then a sound bed, word-highlight captions and a cinematic grade are added."""
-import math, random, subprocess, textwrap
+import math, random, re, subprocess, textwrap
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
@@ -207,6 +207,16 @@ def _beats(scenes):
     return out
 
 
+_STOP = set("a an the of in on at with and or to for from by is are was were his her their its this that "
+             "shot medium wide close up close-up photo realistic natural light lighting soft background "
+             "documentary camera angle view scene".split())
+
+
+def _keywords(text, n=4):
+    words = [w for w in re.findall(r"[A-Za-z]+", text.lower()) if w not in _STOP and len(w) > 2]
+    return " ".join(words[:n]) or "city street"
+
+
 def _is_wide(path):
     with Image.open(path) as im:
         return im.width > im.height * 1.2
@@ -281,7 +291,21 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
         mi += 1
         try:
             if kind == "ai":
-                src = imggen.generate(with_cast(shot.get("prompt", b["text"])), vertical)
+                try:
+                    if imggen.dead >= {"klein", "schnell"}:
+                        raise RuntimeError("AI quota used up today")
+                    src = imggen.generate(with_cast(shot.get("prompt", b["text"])), vertical)
+                except Exception:  # noqa: BLE001  -> real photo or clip of the same idea
+                    q = _keywords(shot.get("prompt") or b["text"])
+                    src = None
+                    if photos is not None:
+                        try:
+                            src = photos.find(q, vertical)
+                        except Exception:  # noqa: BLE001
+                            src = None
+                    if src is None:
+                        src = stock.clip(q, vertical)   # raises -> hold below
+                    print(f"[video] AI unavailable -> real {'clip' if str(src).endswith('.mp4') else 'photo'} for '{q}'")
                 last_img = src
                 info["scene_images"].setdefault(b.get("scene", 0), []).append(str(src))
                 show(src, frames, seg, motion, strength, i)

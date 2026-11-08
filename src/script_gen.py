@@ -124,13 +124,27 @@ Return ONLY JSON:
 SHOT_TYPES = {"ai", "stat", "hold", "stock", "photo"}
 
 
+import re
+import unicodedata
+
+_SPACES = dict.fromkeys(map(ord, "\u00a0\u202f\u2007\u2009\u200a\u2002\u2003"), " ")
+_SPACES.update({ord("\u2011"): "-", ord("\u2010"): "-", ord("\u200b"): None, ord("\u2060"): None})
+
+
+def clean_text(t):
+    """Plain spaces/hyphens only (LLMs insert invisible characters that make TTS read words wrong)."""
+    t = re.sub(r"(?<=[A-Za-z])[\u202f\u200b\u2060](?=[a-z])", "", str(t))   # "Pearl\u202fman" -> "Pearlman"
+    t = unicodedata.normalize("NFKC", t).translate(_SPACES)
+    return re.sub(r"\s{2,}", " ", t).strip()
+
+
 def _norm_beat(b):
     """Repairs the small format slips LLMs make. Returns a clean beat dict or None."""
     if isinstance(b, str):
         b = {"text": b}
     if not isinstance(b, dict):
         return None
-    text = str(b.get("text") or b.get("narration") or "").strip()
+    text = clean_text(b.get("text") or b.get("narration") or "")
     if not text:
         return None
     shot = b.get("shot")

@@ -1,7 +1,7 @@
 """Fact-check every script before anything is rendered.
 1st choice: Gemini with live Google Search. Backup: Groq reviewing with what it knows (marked 'unverified').
 Wrong claims get rewritten or removed; a story that can't be supported is rejected (a new one is written)."""
-import json
+import json, re
 from .llm import generate_json, search_json
 
 ASK = """You are the fact-checker of a true-story YouTube channel. Real people and companies are named, so
@@ -62,7 +62,10 @@ def check(beats, title, sources, llm_cfg, source_text="", chunk=60):
             i, txt = int(f.get("line")), str(f.get("text", "")).strip()
         except (TypeError, ValueError):
             continue
-        if 0 <= i < len(beats) and txt and txt != beats[i]["text"]:
+        from .script_gen import clean_text
+        txt = clean_text(txt)
+        same = re.sub(r"\W", "", txt.lower()) == re.sub(r"\W", "", beats[i]["text"].lower()) if 0 <= i < len(beats) else True
+        if 0 <= i < len(beats) and txt and not same:
             print(f"[fact] line {i}: {beats[i]['text'][:60]!r} -> {txt[:60]!r} ({str(f.get('why', ''))[:60]})")
             beats[i]["text"] = txt
             fixes += 1
