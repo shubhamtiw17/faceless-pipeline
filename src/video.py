@@ -2,6 +2,7 @@
 every beat (1-2 sentences) gets its own voice delivery, its own shot that shows what is being said,
 and its own sound effect; then a sound bed, word-highlight captions and a cinematic grade are added."""
 import math, random, re, subprocess, textwrap
+import numpy as np
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
@@ -217,6 +218,52 @@ def _keywords(text, n=4):
     return " ".join(words[:n]) or "city street"
 
 
+def _speech_check(a, sr=48000):
+    """Returns (start, end, longest_inner_gap_s, speech_ratio) of a voice clip."""
+    if len(a) == 0:
+        return 0, 0, 99.0, 0.0
+    win = sr // 50                                    # 20 ms frames
+    n = len(a) // win
+    rms = np.sqrt((a[:n * win].reshape(n, win) ** 2).mean(axis=1)) if n else np.array([0.0])
+    loud = rms > max(0.01, rms.max() * 0.05)
+    if not loud.any():
+        return 0, 0, 99.0, 0.0
+    idx = np.flatnonzero(loud)
+    first, last = idx[0], idx[-1]
+    gaps = np.diff(idx) - 1
+    return first * win, (last + 1) * win, float(gaps.max() * win / sr) if len(gaps) else 0.0, loud.mean()
+
+
+def _good_voice(text, ch, emo, mp3, tries=3):
+    """Synthesises a beat and rejects clips with missing speech (the free TTS sometimes returns long
+    silences); trims leading/trailing silence and shifts word timings to match."""
+    from .sfx import load
+    best = None
+    voice = ch["voice"]
+    for k in range(tries):
+        words, pause = synth_beat(text, voice, ch.get("rate", "+0%"), emo, str(mp3))
+        a = load(mp3)
+        start, end, gap, ratio = _speech_check(a)
+        expected = max(0.6, len(text.split()) * 0.22)          # seconds of speech we should get
+        ok = gap < 1.2 and (end - start) / 48000 >= expected * 0.6
+        if best is None or gap < best[0]:
+            best = (gap, words, pause, a, start, end)
+        if ok:
+            break
+        print(f"[tts] bad clip (gap {gap:.1f}s, {((end - start) / 48000):.1f}s speech) -> retry {k + 1}")
+        voice = "en-US-GuyNeural" if k else voice
+    gap, words, pause, a, start, end = best
+    lead = max(0, start - int(0.04 * 48000))
+    a = a[lead:min(len(a), end + int(0.12 * 48000))]
+    words = [(max(0.0, s0 - lead / 48000), max(0.0, e0 - lead / 48000), w) for s0, e0, w in words]
+    return words, pause, a
+
+
+def _save_mono(a, path):
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", "48000", "-ac", "1", "-i", "-",
+                    "-c:a", "pcm_s16le", str(path)], input=np.asarray(a, dtype=np.float32).tobytes(), check=True)
+
+
 def _is_wide(path):
     with Image.open(path) as im:
         return im.width > im.height * 1.2
@@ -266,13 +313,14 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
             info["chapters"].append((b.get("scene_title") or f"Part {len(info['chapters']) + 1}", t))
         emo = b.get("emotion", "neutral")
         mp3, wav = wd / f"b{i:03}.mp3", wd / f"b{i:03}.wav"
-        words, pause = synth_beat(b["text"], ch["voice"], ch.get("rate", "+0%"), emo, str(mp3))
-        dur = _duration(mp3)
+        words, pause, voice_audio = _good_voice(b["text"], ch, emo, mp3)
+        pause += SCENE_GAP if b.get("scene_end") else 0
+        dur = len(voice_audio) / 48000
         if not words:
             words = estimate_words(b["text"], dur)
-        pause += SCENE_GAP if b.get("scene_end") else 0
-        _run(["ffmpeg", "-y", "-i", mp3, "-af", f"apad=pad_dur={pause:.2f}", "-ar", "48000", "-ac", "1", wav])
-        seg_len = _duration(wav)
+        audio = np.concatenate([voice_audio, np.zeros(int(pause * 48000), dtype=np.float32)])
+        _save_mono(audio, wav)
+        seg_len = len(audio) / 48000
         words_all += [(s + t, e + t, w) for s, e, w in words]
         wavs.append(wav)
 
@@ -369,6 +417,20 @@ def build_video(scenes, ch, stock, imggen, workdir, vertical, vcfg, out_name, ti
     (wd / "alist.txt").write_text("".join(f"file '{a.name}'\n" for a in wavs))
     _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "vlist.txt", "-c", "copy", "video.mp4"], cwd=wd)
     _run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", "alist.txt", "-c:a", "pcm_s16le", "voice.wav"], cwd=wd)
+    try:
+        from .sfx import load
+        v = load(wd / "voice.wav")
+        win = 960; n = len(v) // win
+        quiet = np.sqrt((v[:n * win].reshape(n, win) ** 2).mean(axis=1)) < 0.005
+        runs, cur = [], 0
+        for i_, q in enumerate(quiet):
+            cur = cur + 1 if q else 0
+            if cur == int(2.0 * 50):
+                runs.append(round((i_ - cur) * win / 48000, 1))
+        if runs:
+            print(f"[audio] WARNING silences >2s at {runs[:10]} s")
+    except Exception:  # noqa: BLE001
+        pass
     music = sorted(Path("assets/music").glob("*.mp3"))
     sound.mix(wd / "voice.wav", events, ch.get("mood", "dark"), music, wd, wd / "mix.wav",
               bed_level=vcfg.get("bed_level", 0.06))
