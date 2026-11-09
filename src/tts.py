@@ -44,17 +44,31 @@ def estimate_words(text, dur):
     return out
 
 
+BACKUP_VOICES = ["en-US-GuyNeural", "en-US-AriaNeural", "en-US-ChristopherNeural"]
+
+
 def synth_beat(text, voice, base_rate, emotion, mp3):
-    """Writes mp3. Returns (word timings or [], pause_after_seconds)."""
+    """Writes mp3. Returns (word timings or [], pause_after_seconds).
+    Microsoft's free TTS sometimes returns no audio (throttling): wait and retry, then plain prosody,
+    then backup voices. Never lets one sentence crash a whole video."""
+    import time
     dr, dp, dv, pause = PROSODY.get(emotion, PROSODY["neutral"])
     base = int(re.sub(r"[^-\d]", "", base_rate or "0") or 0)
     if text.rstrip().endswith("?"):
         dp, pause = max(dp, 2), max(pause, 0.45)
-    for attempt in range(3):
+    text = re.sub(r"[*_#<>{}\[\]|~^]", " ", text)          # symbols some voices choke on
+    if not re.search(r"[A-Za-z0-9]", text):
+        text = "..."
+    attempts = [(voice, _pct(base + dr), f"{'+' if dp >= 0 else ''}{dp}Hz", _pct(dv))] * 3 + \
+               [(voice, "+0%", "+0Hz", "+0%")] + [(v, "+0%", "+0Hz", "+0%") for v in BACKUP_VOICES]
+    last = None
+    for k, (v, rate, pitch, vol) in enumerate(attempts):
         try:
-            words = asyncio.run(_synth(text, voice, _pct(base + dr), f"{'+' if dp >= 0 else ''}{dp}Hz",
-                                       _pct(dv), mp3))
+            words = asyncio.run(_synth(text, v, rate, pitch, vol, mp3))
+            if k:
+                print(f"[tts] recovered on attempt {k + 1} ({v})")
             return words, pause
-        except Exception:  # noqa: BLE001
-            if attempt == 2:
-                raise
+        except Exception as e:  # noqa: BLE001
+            last = e
+            time.sleep(min(2 * (k + 1), 10))
+    raise RuntimeError(f"TTS failed after {len(attempts)} attempts: {last}")

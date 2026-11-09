@@ -24,7 +24,7 @@ video:
 images:
   image_providers: [klein, schnell]   # klein = FLUX.2 photoreal; schnell = older fallback (pollinations is no longer free)
   size_long: [1344, 768]
-  size_short: [1024, 1280]  # 4:5, trimmed to 9:16 (tall sizes make FLUX repeat the scene)
+  size_short: [1344, 768]   # wide, panned across in Shorts (tall sizes make FLUX produce collages)
   flux_steps: 6         # schnell quality (4-8); ~80 units per image
   klein_per_video: 8    # FLUX.2 Klein (realistic, ~500 units each) for the first/most important shots only
   image_qc: true        # Gemini checks each image (realism, garbled text, hands, matches the sentence)
