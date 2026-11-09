@@ -14,5 +14,39 @@
    },
    "yt_short": "mmFQ6OUiWmY"
   }
+ ],
+ "cash_and_court": [
+  {
+   "date": "2026-11-09",
+   "title": "Inside Madoff's $65B Ponzi Collapse",
+   "pillar": null,
+   "source_title": "Bernie Madoff",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 4,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "fixed",
+     "fixes": 2,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "ok",
+     "fixes": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "5Xu0oXoYWcU",
+   "yt_part1": "z8nRa32OFg0",
+   "yt_part2": "Mf8lZtOyfPw",
+   "yt_part3": "GxRgkSnIsWk"
+  }
  ]
 }
