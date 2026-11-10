@@ -45,6 +45,20 @@
    "yt_part1": "iw3N6Mk2Nps",
    "yt_part2": "SaUoU6kFIX0",
    "yt_part3": "080UHjt8beA"
+  },
+  {
+   "date": "2026-11-10",
+   "title": "Lehman\u2019s $600B Collapse: How One Bank\u2019s Fall Shook the World",
+   "pillar": "Rich People Secrets",
+   "source_title": "Bankruptcy of Lehman Brothers",
+   "factcheck": {
+    "short": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "method": "source-grounded"
+    }
+   },
+   "yt_short": "xm9_AafAQB8"
   }
  ],
  "cash_and_court": [
