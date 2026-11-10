@@ -201,7 +201,8 @@ def _beats(scenes):
                 groups.append([{"text": sc.get("narration", ""), "emotion": "neutral", "shot": shot}])
     out = []
     for gi, g in enumerate(groups):
-        g = [b for b in g if (b.get("text") or "").strip()]
+        g = [b for b in g if (b.get("text") or "").strip()
+             and not re.fullmatch(r"\W*(removed|deleted|omitted)\W*", b["text"].strip().lower())]
         for j, b in enumerate(g):
             out.append(dict(b, scene_end=(j == len(g) - 1 and gi < len(groups) - 1), scene=gi,
                             scene_title=titles[gi] if gi < len(titles) else None))

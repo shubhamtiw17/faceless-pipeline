@@ -21,6 +21,8 @@ Numbered narration lines:
 For EVERY line with a factual claim (names, years, amounts, charges, verdicts, methods), check it AGAINST THE SOURCE.
 - If a detail contradicts the SOURCE, rewrite the line with the SOURCE's detail, same length and tone.
 - If a detail is NOT in the SOURCE, rewrite the line without it (keep the storytelling).
+- Atmosphere/transition lines without facts ("The pressure was immense.") are fine; keep them.
+- To delete a line completely, set "text" to "" (empty). Never write "(removed)" or similar.
 - Opinions, questions and hooks without facts are fine as they are.
 - verdict "reject" only if the core story is not what the SOURCE describes.
 
@@ -64,6 +66,13 @@ def check(beats, title, sources, llm_cfg, source_text="", chunk=60):
             continue
         from .script_gen import clean_text
         txt = clean_text(txt)
+        if re.fullmatch(r"[\(\[]?\s*(removed|deleted|omit(ted)?|drop(ped)?|none|n/?a|-+)\s*[\)\]]?\.?", txt.lower()) \
+                or len(re.sub(r"\W", "", txt)) < 3:
+            if 0 <= i < len(beats):    # checker wants the line gone: drop it (empty text = skipped beat)
+                print(f"[fact] line {i}: removed {beats[i]['text'][:60]!r} ({str(f.get('why', ''))[:60]})")
+                beats[i]["text"] = ""
+                fixes += 1
+            continue
         same = re.sub(r"\W", "", txt.lower()) == re.sub(r"\W", "", beats[i]["text"].lower()) if 0 <= i < len(beats) else True
         if 0 <= i < len(beats) and txt and not same:
             print(f"[fact] line {i}: {beats[i]['text'][:60]!r} -> {txt[:60]!r} ({str(f.get('why', ''))[:60]})")
