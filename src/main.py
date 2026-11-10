@@ -78,6 +78,10 @@ def main():
 
     today = dt.datetime.now(dt.timezone.utc)
     is_long_day = today.strftime("%a") in ch["long_days"]
+    done_today = any(h.get("date") == today.strftime("%Y-%m-%d") and h.get("yt_long") for h in history)
+    if is_long_day and done_today and not a.force_long:
+        print(f"[main] {ch['name']} | documentary already published today -> posting queued Reels only")
+        is_long_day = False
     do_long = not a.short_only and (a.force_long or is_long_day)
     # no documentary today and Shorts/Reels from the last one are still queued -> just post today's Reels
     if not do_long and not a.short_only and queued:
