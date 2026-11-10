@@ -3,7 +3,7 @@ llm:
   groq_model: openai/gpt-oss-120b      # backup (falls back to gpt-oss-20b / qwen on rate limits)
 
 youtube:
-  privacy: private      # switch to "public" after you review the first videos AND the API audit is approved
+  privacy: public      # switch to "public" after you review the first videos AND the API audit is approved
   category_id: "27"     # Education
   shorts_hour_utc: 17   # Shorts series: Part 1 today, Part 2 tomorrow ... each at 17:00 UTC (12:00 ET)
 
