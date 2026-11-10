@@ -13,6 +13,38 @@
     }
    },
    "yt_short": "mmFQ6OUiWmY"
+  },
+  {
+   "date": "2026-11-10",
+   "title": "How Enron Hid $30B in Debt with Secret Shell Companies",
+   "pillar": null,
+   "source_title": "Enron scandal",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 15,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "ok",
+     "fixes": 0,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "fixed",
+     "fixes": 2,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "-RhdNDgefeE",
+   "yt_part1": "iw3N6Mk2Nps",
+   "yt_part2": "SaUoU6kFIX0",
+   "yt_part3": "080UHjt8beA"
   }
  ],
  "cash_and_court": [
