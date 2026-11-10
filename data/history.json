@@ -47,6 +47,20 @@
    "yt_part1": "z8nRa32OFg0",
    "yt_part2": "Mf8lZtOyfPw",
    "yt_part3": "GxRgkSnIsWk"
+  },
+  {
+   "date": "2026-11-10",
+   "title": "Deepwater Horizon: The $20.8\u202fB Insurance Battle That Changed Gulf Law",
+   "pillar": "Insurance Horror Stories",
+   "source_title": "Deepwater Horizon oil spill",
+   "factcheck": {
+    "short": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "method": "source-grounded"
+    }
+   },
+   "yt_short": "vVe9funKJOI"
   }
  ]
 }
