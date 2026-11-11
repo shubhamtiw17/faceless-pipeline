@@ -10,6 +10,7 @@ import yaml
 from .footage import Stock
 from .imagegen import ImageGen
 from .realphotos import RealPhotos
+from . import queue_store
 from .script_gen import make_script
 from .video import build_video, make_thumbnail
 
@@ -74,6 +75,15 @@ def main():
     history = hist_all.setdefault(a.channel, [])
     queue_dir = Path("queue") / a.channel
     queue_dir.mkdir(parents=True, exist_ok=True)
+    queue_store.pull(a.channel, queue_dir)
+    try:
+        _run(a, cfg, ch, yc, hist_path, hist_all, history, queue_dir)
+    finally:
+        if not a.dry_run:
+            queue_store.push(a.channel, queue_dir)
+
+
+def _run(a, cfg, ch, yc, hist_path, hist_all, history, queue_dir):
     queued = sorted(queue_dir.glob("*.json"))
 
     today = dt.datetime.now(dt.timezone.utc)
@@ -237,7 +247,10 @@ def post_queued_reel(ch, cfg, queue_dir):
         due.sort(key=lambda p: (p.name.split("_")[0], "_part" not in p.name, p.name))
         if not due:
             break
-        n += _post_one(ch, cfg, queue_dir, due[0])
+        ok = _post_one(ch, cfg, queue_dir, due[0])
+        if not ok:
+            break          # leave it queued; tomorrow's run tries again
+        n += ok
     return n
 
 
