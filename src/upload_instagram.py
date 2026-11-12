@@ -35,10 +35,31 @@ def _attempt(g, ig_user, token, path, caption):
     return pub["id"]
 
 
+def ig_safe(path):
+    """Re-encode to Instagram's preferred spec (H.264 high, 30fps, ~3.5 Mbps, AAC 48 kHz, faststart).
+    Large/high-bitrate files often get a non-retriable 'ProcessingFailedError' from Instagram."""
+    import subprocess
+    out = os.path.splitext(path)[0] + "_ig.mp4"
+    if os.path.exists(out) and os.path.getsize(out) > 10_000:
+        return out
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", path,
+                    "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,fps=30",
+                    "-c:v", "libx264", "-profile:v", "high", "-level", "4.1", "-pix_fmt", "yuv420p",
+                    "-preset", "fast", "-b:v", "3500k", "-maxrate", "4500k", "-bufsize", "9000k", "-g", "60",
+                    "-c:a", "aac", "-b:a", "128k", "-ar", "48000", "-ac", "2", "-movflags", "+faststart", out],
+                   check=True)
+    return out
+
+
 def upload_reel(ig_user, token, path, caption, version="v21.0", tries=3):
     g = f"https://graph.facebook.com/{version}"
     if not os.path.exists(path) or os.path.getsize(path) < 10_000:
         raise RuntimeError(f"video file missing or empty: {path}")
+    try:
+        path = ig_safe(path)
+        print(f"[ig] re-encoded for Instagram: {os.path.getsize(path) // 1024} KB")
+    except Exception as e:  # noqa: BLE001
+        print(f"[ig] re-encode skipped: {str(e)[:120]}")
     last = None
     for k in range(tries):
         try:
