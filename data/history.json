@@ -149,6 +149,42 @@
     }
    },
    "yt_short": "M4DIfQ73Ukg"
+  },
+  {
+   "date": "2026-11-13",
+   "title": "AIG's $180B Bailout: Inside the Fraud That Shook Wall Street",
+   "pillar": null,
+   "source_title": "American International Group",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 28,
+     "removed": 3,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "ok",
+     "fixes": 0,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "ok",
+     "fixes": 0,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "fixed",
+     "fixes": 3,
+     "removed": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "9oJ-k5QNekU",
+   "yt_part1": "Hn48xMxFbt0",
+   "yt_part2": "yGJiawtKacI",
+   "yt_part3": "PQXU2Et-MAg"
   }
  ]
 }
