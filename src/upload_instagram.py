@@ -51,7 +51,31 @@ def ig_safe(path):
     return out
 
 
-def upload_reel(ig_user, token, path, caption, version="v21.0", tries=3):
+def _by_url(g, ig_user, token, url, caption):
+    """Instagram downloads the video itself from a public URL (avoids its flaky upload server)."""
+    r = requests.post(f"{g}/{ig_user}/media", timeout=60, data={
+        "media_type": "REELS", "video_url": url, "caption": caption[:2200],
+        "share_to_feed": "true", "access_token": token}).json()
+    if "id" not in r:
+        raise RuntimeError(f"IG url container failed: {r}")
+    cid = r["id"]
+    for _ in range(60):
+        s = requests.get(f"{g}/{cid}", params={"fields": "status_code,status", "access_token": token}, timeout=30).json()
+        if s.get("status_code") == "FINISHED":
+            break
+        if s.get("status_code") == "ERROR":
+            raise RuntimeError(f"IG url processing error: {s}")
+        time.sleep(10)
+    else:
+        raise RuntimeError("IG url processing timed out")
+    pub = requests.post(f"{g}/{ig_user}/media_publish", timeout=60,
+                        data={"creation_id": cid, "access_token": token}).json()
+    if "id" not in pub:
+        raise RuntimeError(f"IG publish failed: {pub}")
+    return pub["id"]
+
+
+def upload_reel(ig_user, token, path, caption, version="v21.0", tries=3, public_url=None):
     g = f"https://graph.facebook.com/{version}"
     if not os.path.exists(path) or os.path.getsize(path) < 10_000:
         raise RuntimeError(f"video file missing or empty: {path}")
@@ -61,6 +85,13 @@ def upload_reel(ig_user, token, path, caption, version="v21.0", tries=3):
     except Exception as e:  # noqa: BLE001
         print(f"[ig] re-encode skipped: {str(e)[:120]}")
     last = None
+    if public_url:                       # 1st choice: Instagram fetches the file from the GitHub Release
+        try:
+            pid = _by_url(f"https://graph.facebook.com/{version}", ig_user, token, public_url, caption)
+            print(f"[ig] published reel {pid} (via URL)")
+            return pid
+        except Exception as e:  # noqa: BLE001
+            print(f"[ig] URL method failed: {str(e)[:200]} -> trying direct upload")
     for k in range(tries):
         try:
             pid = _attempt(g, ig_user, token, path, caption)

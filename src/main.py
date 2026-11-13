@@ -76,6 +76,7 @@ def main():
     queue_dir = Path("queue") / a.channel
     queue_dir.mkdir(parents=True, exist_ok=True)
     queue_store.pull(a.channel, queue_dir)
+    ch["_key"] = a.channel
     try:
         _run(a, cfg, ch, yc, hist_path, hist_all, history, queue_dir)
     finally:
@@ -235,6 +236,7 @@ def _run(a, cfg, ch, yc, hist_path, hist_all, history, queue_dir):
             shutil.copy(path, queue_dir / f"{stem}.mp4")
             (queue_dir / f"{stem}.json").write_text(json.dumps({"file": f"{stem}.mp4", "caption": cap,
                                                                 "post_on": post_on}))
+        queue_store.push(ch["_key"], queue_dir)     # upload first so Instagram can fetch by URL
         ok += post_queued_reel(ch, cfg, queue_dir)
     history.append(entry)
     hist_path.parent.mkdir(exist_ok=True)
@@ -261,8 +263,18 @@ def post_queued_reel(ch, cfg, queue_dir):
         if not due:
             break
         ok = _post_one(ch, cfg, queue_dir, due[0])
-        if not ok:
-            break          # leave it queued; tomorrow's run tries again
+        if ok is None:
+            break          # token problem: nothing else will post either
+        if not ok:         # this file failed: let the next one go first today
+            meta = json.loads(due[0].read_text())
+            meta["fails"] = meta.get("fails", 0) + 1
+            meta["post_on"] = (dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=1)).strftime("%Y-%m-%d")
+            if meta["fails"] >= 3:
+                print(f"[ig] giving up on {meta['file']} after 3 failed days")
+                (queue_dir / meta["file"]).unlink(missing_ok=True); due[0].unlink()
+            else:
+                due[0].write_text(json.dumps(meta))
+            continue
         n += ok
     return n
 
@@ -274,14 +286,17 @@ def _post_one(ch, cfg, queue_dir, item):
     try:
         from .upload_instagram import upload_reel
         sec = ch["secrets"]
+        url = None
+        if os.environ.get("GITHUB_ACTIONS") and os.environ.get("GH_REPO"):
+            url = f"https://github.com/{os.environ['GH_REPO']}/releases/download/ig-queue/{ch['_key']}__{meta['file']}"
         upload_reel(os.environ[sec["ig_user"]], os.environ[sec["ig_token"]], video, meta["caption"],
-                    cfg["instagram"]["graph_version"])
+                    cfg["instagram"]["graph_version"], public_url=url)
         items[0].unlink(); video.unlink(missing_ok=True)
         print(f"[ig] posted {meta['file']} ({len(list(queue_dir.glob('*.json')))} left in queue)")
         return 1
     except Exception as e:  # noqa: BLE001
-        print(f"[ig] FAILED (stays queued for tomorrow): {e}")
-        return 0
+        print(f"[ig] FAILED: {e}")
+        return None if ("OAuthException" in str(e) or "access token" in str(e).lower()) else 0
 
 
 if __name__ == "__main__":
