@@ -146,9 +146,16 @@ def _run(a, cfg, ch, yc, hist_path, hist_all, history, queue_dir):
         parts = s.get("parts") or []
         for k, p in enumerate(parts):   # YouTube: Part k goes public on day k; Instagram: same day
             pool = [x for c in p["chapters"] for x in info["scene_images"].get(c - 1, [])] or all_imgs
-            path = build_video(p["beats"], ch, stock, img, work / f"part{k + 1}", True, cfg["video"],
-                               f"part{k + 1}.mp4", title=p["title"], cast=s.get("cast"), effects=fx,
-                               image_pool=pool)
+            if sum(1 for b in p["beats"] if b["text"].strip()) < 3:
+                print(f"[main] part {k + 1} skipped (too little left after fact-check)")
+                continue
+            try:
+                path = build_video(p["beats"], ch, stock, img, work / f"part{k + 1}", True, cfg["video"],
+                                   f"part{k + 1}.mp4", title=p["title"], cast=s.get("cast"), effects=fx,
+                                   image_pool=pool)
+            except Exception as e:  # noqa: BLE001
+                print(f"[main] part {k + 1} failed to build: {str(e)[:150]}")
+                continue
             cap = f"{p.get('caption', '')}\n\n" + " ".join("#" + h.lstrip("#") for h in p.get("hashtags", []))
             videos.append((f"part{k + 1}", path, p["title"] + " #shorts",
                            describe(s, p.get("caption") or s["description"], link_note="Full documentary on the channel.",
@@ -168,8 +175,14 @@ def _run(a, cfg, ch, yc, hist_path, hist_all, history, queue_dir):
                 words += len(b["text"].split())
             pool = info["scene_images"].get(ci, []) or all_imgs
             title = sc.get("title") or s["title"]
-            path = build_video(beats, ch, stock, img, work / f"clip{j + 1}", True, cfg["video"], f"clip{j + 1}.mp4",
-                               title=title, cast=s.get("cast"), effects=fx, image_pool=pool)
+            if sum(1 for b in beats if b["text"].strip()) < 3:
+                continue
+            try:
+                path = build_video(beats, ch, stock, img, work / f"clip{j + 1}", True, cfg["video"],
+                                   f"clip{j + 1}.mp4", title=title, cast=s.get("cast"), effects=fx, image_pool=pool)
+            except Exception as e:  # noqa: BLE001
+                print(f"[main] clip {j + 1} failed to build: {str(e)[:150]}")
+                continue
             cap = f"{title} - from our documentary \"{s['title']}\". Full story on YouTube.\n\n{tagline}"
             videos.append((f"clip{j + 1}", path, title, "", None, None, cap, j % ndays))
     else:

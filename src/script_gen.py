@@ -213,7 +213,15 @@ def _find_short(d):
             return {"beats": v}
     if isinstance(d.get("beats"), list):
         return {"beats": d["beats"], "title": d.get("short_title") or d.get("title")}
+    for k, v in d.items():               # e.g. {"script": {"beats": [...]}} or {"short_script": [...]}
+        if isinstance(v, dict) and isinstance(v.get("beats"), list):
+            return v
+        if "short" in k.lower() and isinstance(v, list) and v and isinstance(v[0], (dict, str)):
+            return {"beats": v}
     return None
+
+
+_LAST = {}
 
 
 def _make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24, avoid=()):
@@ -234,6 +242,7 @@ def _make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24, avoid=())
     if not art:
         raise RuntimeError("no candidate story had a usable Wikipedia article")
     print(f"[source] {art['title']} ({len(art['text'])} chars) {art['url']}")
+    _LAST["src"] = art["title"]
     from .realphotos import RealPhotos
     pool = RealPhotos().article_photos(art["title"])
     photos_txt = "\n".join(f"P{i + 1}: {p['desc']}" for i, p in enumerate(pool)) or "(none - use photo queries)"
@@ -445,8 +454,14 @@ def make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24):
     """Writes the script, then fact-checks it. A story the checker rejects is replaced (max 3 stories)."""
     from .factcheck import check_script
     avoid = []
-    for attempt in range(3):
-        data = _make_script(ch, history, llm_cfg, long_form, max_ai_long, avoid)
+    for attempt in range(4):
+        try:
+            data = _make_script(ch, history, llm_cfg, long_form, max_ai_long, avoid)
+        except RuntimeError as e:
+            print(f"[script] story failed ({str(e)[:120]}) - trying a different story")
+            avoid.append(_LAST.get("src", f"attempt{attempt}"))
+            import time; time.sleep(20)
+            continue
         try:
             if check_script(data, llm_cfg):
                 return data
@@ -456,4 +471,4 @@ def make_script(ch, history, llm_cfg, long_form=True, max_ai_long=24):
             return data
         print(f"[fact] story rejected: {data.get('title')!r} - writing a different one")
         avoid.append(str(data.get("source_title")))
-    raise RuntimeError("3 stories failed fact-check")
+    raise RuntimeError("4 stories failed (script or fact-check)")

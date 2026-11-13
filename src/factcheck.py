@@ -94,8 +94,13 @@ def check_script(data, llm_cfg):
     else:
         groups.append(("short", data["short"]["beats"]))
     for name, beats in groups:
+        before = sum(1 for b in beats if b["text"].strip())
         v, n, s2, how = check(beats, data.get("title", ""), data.get("sources"), llm_cfg, st)
-        report[name] = {"verdict": v, "fixes": n, "method": how}
+        gone = before - sum(1 for b in beats if b["text"].strip())
+        if before and gone / before > 0.3:      # mostly invented story: don't publish its remains
+            print(f"[fact] {name}: {gone}/{before} lines unsupported by the source")
+            v = "reject"
+        report[name] = {"verdict": v, "fixes": n, "removed": gone, "method": how}
         src += s2
         if v == "reject" and name in ("long", "short"):
             data["factcheck"] = report
