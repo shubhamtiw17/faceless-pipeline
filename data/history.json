@@ -264,6 +264,21 @@
    "yt_part1": "Hn48xMxFbt0",
    "yt_part2": "yGJiawtKacI",
    "yt_part3": "PQXU2Et-MAg"
+  },
+  {
+   "date": "2026-11-17",
+   "title": "Enron's $40\u202fB Shareholder Lawsuit: How Victims Got $7.2\u202fB Back",
+   "pillar": "Lawsuits Explained",
+   "source_title": "Enron scandal",
+   "factcheck": {
+    "short": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "removed": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_short": "XWUyCx9X6D0"
   }
  ]
 }
