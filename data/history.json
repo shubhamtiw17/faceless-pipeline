@@ -116,6 +116,42 @@
    "yt_part2": "AASrtwwSnQs",
    "yt_part3": "LMCBmBIiqW4",
    "yt_part4": "lIzQQqwLW38"
+  },
+  {
+   "date": "2026-11-17",
+   "title": "The Hidden Power Plays Behind Meta's Rise",
+   "pillar": null,
+   "source_title": "Meta Platforms",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 12,
+     "removed": 1,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "ok",
+     "fixes": 0,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "removed": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "JQSdV9yGjwQ",
+   "yt_part1": "0v0xSHfqABc",
+   "yt_part2": "Xl2CY2OZOGo",
+   "yt_part3": "i7XopWkp8Rs"
   }
  ],
  "cash_and_court": [
