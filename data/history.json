@@ -294,6 +294,20 @@
     }
    },
    "yt_short": "TTs7Xw0-Qyc"
+  },
+  {
+   "date": "2026-11-19",
+   "title": "Hurricane Andrew: The Untold Insurance Fight",
+   "pillar": null,
+   "source_title": "Hurricane Andrew",
+   "factcheck": {
+    "error": "All LLMs failed: gemini#0: gemini skipped (busy a moment ago) | groq#0: groq: all models rate-limited (qwen/qwen3.8-27b: 429) - free daily limit, resets in a few hours | groq#1: groq: all models rate-"
+   },
+   "yt_long": "2VCmLh0_-_c",
+   "yt_part1": "Rj-VqMq8H4g",
+   "yt_part2": "PxXOUY4Lb7w",
+   "yt_part3": "ZgP6fEG0wE4",
+   "yt_part4": "3SDmO39Y-VY"
   }
  ]
 }
