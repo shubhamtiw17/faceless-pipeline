@@ -152,6 +152,49 @@
    "yt_part1": "0v0xSHfqABc",
    "yt_part2": "Xl2CY2OZOGo",
    "yt_part3": "i7XopWkp8Rs"
+  },
+  {
+   "date": "2026-11-20",
+   "title": "LuxLeaks: Inside the Secret Tax Deal Machine",
+   "pillar": null,
+   "source_title": "LuxLeaks",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 18,
+     "removed": 13,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "removed": 1,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "fixed",
+     "fixes": 3,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "ok",
+     "fixes": 0,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part4": {
+     "verdict": "fixed",
+     "fixes": 3,
+     "removed": 1,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "J6belrcfo0U",
+   "yt_part1": "6xAYpKD4d3s",
+   "yt_part2": "dq15mM79SSs",
+   "yt_part3": "s03apk2NbVE",
+   "yt_part4": "GjevfD99uL4"
   }
  ],
  "cash_and_court": [
