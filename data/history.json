@@ -381,6 +381,21 @@
     }
    },
    "yt_short": "WM89P8d6tFo"
+  },
+  {
+   "date": "2026-11-22",
+   "title": "How AIG\u2019s 2008 Policy Rewrites Left Millions Unprotected",
+   "pillar": "Insurance Horror Stories",
+   "source_title": "American International Group",
+   "factcheck": {
+    "short": {
+     "verdict": "fixed",
+     "fixes": 5,
+     "removed": 3,
+     "method": "source-grounded"
+    }
+   },
+   "yt_short": "09e4lJ-idoY"
   }
  ]
 }
