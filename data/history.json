@@ -195,6 +195,28 @@
    "yt_part2": "dq15mM79SSs",
    "yt_part3": "s03apk2NbVE",
    "yt_part4": "GjevfD99uL4"
+  },
+  {
+   "date": "2026-11-24",
+   "title": "Swiss Leaks: How HSBC Hid Billions from the IRS",
+   "pillar": null,
+   "source_title": "Swiss Leaks",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 33,
+     "removed": 25,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "fixed",
+     "fixes": 2,
+     "removed": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "R0WErSpX_50",
+   "yt_part1": "CXKVNFRkDmA"
   }
  ],
  "cash_and_court": [
