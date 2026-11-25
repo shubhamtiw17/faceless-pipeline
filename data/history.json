@@ -433,6 +433,21 @@
     }
    },
    "yt_short": "c6QSnSoi5Bs"
+  },
+  {
+   "date": "2026-11-25",
+   "title": "How OneCoin Swindled Billions and Vanished Without a Trace",
+   "pillar": "Scams Exposed",
+   "source_title": "OneCoin",
+   "factcheck": {
+    "short": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "removed": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_short": "435zfGewi-A"
   }
  ]
 }
