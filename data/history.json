@@ -448,6 +448,48 @@
     }
    },
    "yt_short": "435zfGewi-A"
+  },
+  {
+   "date": "2026-11-26",
+   "title": "Nationwide's Wildfire Claim Battle",
+   "pillar": null,
+   "source_title": "Nationwide Mutual Insurance Company",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 8,
+     "removed": 6,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "fixed",
+     "fixes": 1,
+     "removed": 1,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "reject",
+     "fixes": 5,
+     "removed": 5,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "fixed",
+     "fixes": 3,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part4": {
+     "verdict": "reject",
+     "fixes": 3,
+     "removed": 2,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "o-Tzv6-qcUw",
+   "yt_part1": "S7-kqju07Xg",
+   "yt_part3": "dbGDWpM0orw",
+   "yt_part4": "0BCn03V0i0w"
   }
  ]
 }
