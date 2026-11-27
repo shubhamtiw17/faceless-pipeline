@@ -217,6 +217,49 @@
    },
    "yt_long": "R0WErSpX_50",
    "yt_part1": "CXKVNFRkDmA"
+  },
+  {
+   "date": "2026-11-27",
+   "title": "How One Bedroom Trader Triggered a Trillion-Dollar Crash",
+   "pillar": null,
+   "source_title": "2010 flash crash",
+   "factcheck": {
+    "long": {
+     "verdict": "fixed",
+     "fixes": 8,
+     "removed": 5,
+     "method": "source-grounded"
+    },
+    "part1": {
+     "verdict": "fixed",
+     "fixes": 2,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part2": {
+     "verdict": "ok",
+     "fixes": 0,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part3": {
+     "verdict": "fixed",
+     "fixes": 2,
+     "removed": 0,
+     "method": "source-grounded"
+    },
+    "part4": {
+     "verdict": "ok",
+     "fixes": 0,
+     "removed": 0,
+     "method": "source-grounded"
+    }
+   },
+   "yt_long": "edACDPN2AU0",
+   "yt_part1": "rSnFpp6O8vc",
+   "yt_part2": "G57pUO8p2h8",
+   "yt_part3": "H-JHBISC6FY",
+   "yt_part4": "tZc_-5upj6E"
   }
  ],
  "cash_and_court": [
